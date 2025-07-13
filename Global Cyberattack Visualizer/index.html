@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>🌐 Global Cyberattack Visualizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Cesium for 3D Earth Globe -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.100/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.100/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg, #0d0d0d);
+            color: var(--text, #00ffc3);
+            transition: all 0.3s ease;
+        }
+
+        #cesiumContainer {
+            width: 100%;
+            height: 70vh;
+            display: block;
+        }
+
+        #controls {
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #chartContainer {
+            padding: 1rem;
+            background: #111;
+        }
+
+        #logTable {
+            width: 100%;
+            background: #111;
+            color: #0f0;
+            font-size: 14px;
+            border-collapse: collapse;
+        }
+
+        #logTable th,
+        #logTable td {
+            padding: 5px 10px;
+            border: 1px solid #333;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            background: #00ffc3;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Mobile-friendly adjustments */
+@media screen and (max-width: 768px) {
+    header h1 {
+        font-size: 1.3rem;
+    }
+
+    header p {
+        font-size: 0.8rem;
+    }
+
+    #logTable {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    #logTable th,
+    #logTable td {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+
+    button {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    #cesiumContainer {
+        height: 60vh;
+    }
+}
+
+
+    </style>
+</head>
+
+<body>
+
+    <!-- Header and Info -->
+    <header style="padding: 1rem; background: #000; text-align: center; border-bottom: 2px solid #00ffc3;">
+        <h1 style="margin: 0; font-size: 2rem; color: #00ffc3; letter-spacing: 1px;">
+            🌐 Global Cyberattack Visualizer
+        </h1>
+        <p style="color: #888; font-size: 0.9rem;">
+            Developed with ❤ by <strong>Elvish Patel</strong> — For informational purposes only
+        </p>
+    </header>
+
+    <section id="cesiumWrapper" style="overflow: hidden;">
+    <div id="cesiumContainer"></div>
+</section>
+
+
+    <table id="logTable">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Origin</th>
+                <th>Target</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+    </table>
+
+    <audio id="attackSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+
+    <script>
+        alert(`⚠️ Disclaimer Notice
+
+🌐 Welcome to the Global Cyberattack Visualizer.
+
+📌 This tool is a simulation designed for educational, academic, and demonstration purposes only. 
+🔄 All attacks visualized are algorithmically generated and do NOT reflect real-time or actual cyber events.
+
+📊 It is intended to raise awareness about the global scale and potential impact of cybersecurity threats in an engaging, visual format.
+
+🚫 No real user data, IP addresses, or systems are involved or compromised.
+
+🛠️ Project crafted with curiosity, care, and creativity.
+Developed with ❤ by Elvish Patel
+
+👉 Stay safe online. Learn. Explore. Share.`);
+
+
+        function isWebGLSupported() {
+            try {
+                const canvas = document.createElement('canvas');
+                return !!window.WebGLRenderingContext && (
+                    canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+                );
+            } catch (e) {
+                return false;
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            if (!isWebGLSupported()) {
+                alert("🚫 WebGL is not supported in your browser. Cesium 3D Earth won't work.");
+                return;
+            }
+
+            // ✅ Set your Cesium Ion Access Token
+            Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI1NDI3ZTUxZS0xM2M3LTQzOTQtYjIwYi0xOGY2MGE3MWE1NTYiLCJpZCI6MzIwNzczLCJpYXQiOjE3NTIyOTg2NzF9.bEXPdA1HhnEz062L1XWDFu_IvbG6pLYHGLmnAuvTXHw';
+
+            const viewer = new Cesium.Viewer('cesiumContainer', {
+                imageryProvider: Cesium.createWorldImagery({
+                    style: Cesium.IonWorldImageryStyle.AERIAL_WITH_LABELS
+                }),
+                baseLayerPicker: false,
+                timeline: false,
+                animation: false
+            });
+
+            // Center on the whole world
+            viewer.scene.camera.setView({
+                destination: Cesium.Cartesian3.fromDegrees(0.0, 20.0, 20000000.0)
+            });
+
+            const cities = [
+                { name: "New York", lat: 40.7128, lon: -74.0060 },
+                { name: "Moscow", lat: 55.7558, lon: 37.6173 },
+                { name: "Tokyo", lat: 35.6895, lon: 139.6917 },
+                { name: "Delhi", lat: 28.6139, lon: 77.2090 },
+                { name: "London", lat: 51.5074, lon: -0.1278 },
+                { name: "Beijing", lat: 39.9042, lon: 116.4074 },
+                { name: "Paris", lat: 48.8566, lon: 2.3522 },
+                { name: "Berlin", lat: 52.5200, lon: 13.4050 },
+                { name: "San Francisco", lat: 37.7749, lon: -122.4194 },
+                { name: "Dubai", lat: 25.2048, lon: 55.2708 },
+                { name: "Seoul", lat: 37.5665, lon: 126.9780 },
+                { name: "Sydney", lat: -33.8688, lon: 151.2093 },
+                { name: "Toronto", lat: 43.6510, lon: -79.3470 },
+                { name: "São Paulo", lat: -23.5505, lon: -46.6333 },
+                { name: "Mexico City", lat: 19.4326, lon: -99.1332 },
+                { name: "Singapore", lat: 1.3521, lon: 103.8198 },
+                { name: "Istanbul", lat: 41.0082, lon: 28.9784 },
+                { name: "Los Angeles", lat: 34.0522, lon: -118.2437 },
+                { name: "Bangkok", lat: 13.7563, lon: 100.5018 },
+                { name: "Chicago", lat: 41.8781, lon: -87.6298 },
+                { name: "Madrid", lat: 40.4168, lon: -3.7038 },
+                { name: "Rome", lat: 41.9028, lon: 12.4964 },
+                { name: "Cairo", lat: 30.0444, lon: 31.2357 },
+                { name: "Buenos Aires", lat: -34.6037, lon: -58.3816 },
+                { name: "Lagos", lat: 6.5244, lon: 3.3792 },
+                { name: "Tehran", lat: 35.6892, lon: 51.3890 },
+                { name: "Jakarta", lat: -6.2088, lon: 106.8456 },
+                { name: "Nairobi", lat: -1.2921, lon: 36.8219 },
+                { name: "Karachi", lat: 24.8607, lon: 67.0011 },
+                { name: "Johannesburg", lat: -26.2041, lon: 28.0473 },
+                { name: "Hong Kong", lat: 22.3193, lon: 114.1694 },
+                { name: "Zurich", lat: 47.3769, lon: 8.5417 },
+                { name: "Vienna", lat: 48.2082, lon: 16.3738 },
+                { name: "Helsinki", lat: 60.1699, lon: 24.9384 },
+                { name: "Copenhagen", lat: 55.6761, lon: 12.5683 },
+                { name: "Stockholm", lat: 59.3293, lon: 18.0686 },
+                { name: "Oslo", lat: 59.9139, lon: 10.7522 },
+                { name: "Kuala Lumpur", lat: 3.1390, lon: 101.6869 },
+                { name: "Doha", lat: 25.276987, lon: 51.520008 },
+                { name: "Manila", lat: 14.5995, lon: 120.9842 },
+                { name: "Barcelona", lat: 41.3851, lon: 2.1734 },
+                { name: "Athens", lat: 37.9838, lon: 23.7275 },
+                { name: "Hanoi", lat: 21.0285, lon: 105.8542 },
+                { name: "Baghdad", lat: 33.3152, lon: 44.3661 },
+                { name: "Cape Town", lat: -33.9249, lon: 18.4241 },
+                { name: "Bangalore", lat: 12.9716, lon: 77.5946 },
+                { name: "Montreal", lat: 45.5017, lon: -73.5673 },
+                { name: "Riyadh", lat: 24.7136, lon: 46.6753 },
+                { name: "Abu Dhabi", lat: 24.4539, lon: 54.3773 },
+                { name: "Brussels", lat: 50.8503, lon: 4.3517 }
+            ];
+
+            const types = ['DDoS', 'Malware', 'Phishing', 'Ransomware'];
+            const logBody = document.getElementById('logBody');
+            const attackSound = document.getElementById('attackSound');
+
+            function randomCity() {
+                return cities[Math.floor(Math.random() * cities.length)];
+            }
+
+            function drawAttack() {
+                const origin = randomCity();
+                let target = randomCity();
+                while (target.name === origin.name) target = randomCity();
+                const type = types[Math.floor(Math.random() * types.length)];
+
+                const start = Cesium.Cartesian3.fromDegrees(origin.lon, origin.lat);
+                const end = Cesium.Cartesian3.fromDegrees(target.lon, target.lat);
+
+                // 🔴 Add polyline to visualize attack
+                const attackLine = viewer.entities.add({
+                    polyline: {
+                        positions: [start, end],
+                        width: 2,
+                        material: new Cesium.PolylineGlowMaterialProperty({
+                            glowPower: 0.2,
+                            color: Cesium.Color.RED
+                        }),
+                        arcType: Cesium.ArcType.GEODESIC
+                    }
+                });
+
+                // 🔘 Add glowing point at origin
+                const originPoint = viewer.entities.add({
+                    position: start,
+                    point: {
+                        color: Cesium.Color.BLACK.withAlpha(0.9),
+                        outlineColor: Cesium.Color.RED,
+                        outlineWidth: 2,
+                        pixelSize: 12
+                    }
+                });
+
+                // 🔘 Add glowing point at target
+                const targetPoint = viewer.entities.add({
+                    position: end,
+                    point: {
+                        color: Cesium.Color.RED.withAlpha(0.9),
+                        outlineColor: Cesium.Color.WHITE,
+                        outlineWidth: 2,
+                        pixelSize: 12
+                    }
+                });
+
+                // 🧼 Optional: Auto-remove visual after a few seconds
+                setTimeout(() => {
+                    viewer.entities.remove(attackLine);
+                    viewer.entities.remove(originPoint);
+                    viewer.entities.remove(targetPoint);
+                }, 10000); // remove after 6 seconds
+
+                // 📝 Add entry to log
+                const row = document.createElement('tr');
+                row.innerHTML = `
+    <td>${new Date().toLocaleTimeString()}</td>
+    <td>${origin.name}</td>
+    <td>${target.name}</td>
+    <td>${type}</td>`;
+                logBody.prepend(row);
+                if (logBody.rows.length > 20) logBody.deleteRow(20);
+
+                // 🔊 Play sound
+                attackSound.play();
+            }
+            setInterval(drawAttack, 2000);
+        });
+    </script>
+</body>
+
+</html>
